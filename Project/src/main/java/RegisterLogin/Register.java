@@ -1,5 +1,6 @@
 package RegisterLogin;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import javax.servlet.annotation.WebServlet;
@@ -7,17 +8,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
-import java.io.IOException;
 import org.json.JSONObject;
 
 @WebServlet("/register")
 public class Register extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // Store users in a static HashMap
     private static HashMap<String, String> users = new HashMap<>();
 
-    // Provide access to the users HashMap
     public static HashMap<String, String> getUsers() {
         return users;
     }
@@ -25,30 +23,24 @@ public class Register extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        PrintWriter out = response.getWriter();
-        JSONObject json = new JSONObject();
+        try (PrintWriter out = response.getWriter()) {
+            JSONObject jsonResponse = new JSONObject();
 
-        try {
             String username = request.getParameter("username");
             String password = request.getParameter("password");
 
-            if (username != null && password != null) {
-                users.put(username, password);
-                json.put("username", username);
-                json.put("password", password);
-
-                // Redirect to Login Page after successful registration
-                response.sendRedirect("Login.html");
-                return; // Stop further execution
+            if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+                jsonResponse.put("error", "Username and password cannot be empty");
+            } else if (users.containsKey(username)) {
+                jsonResponse.put("error", "Username already taken. Please choose another.");
             } else {
-                json.put("error", "Username or Password is missing");
+                users.put(username, password);
+                jsonResponse.put("message", "Registration successful. You can now log in.");
             }
-        } catch (Exception e) {
-            json.put("error", e.getMessage());
-        }
 
-        out.print(json.toString());
-        out.flush();
+            out.print(jsonResponse.toString());
+            out.flush();
+        }
     }
 
     @Override
@@ -56,3 +48,4 @@ public class Register extends HttpServlet {
         request.getRequestDispatcher("/Register.html").forward(request, response);
     }
 }
+
